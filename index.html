@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Kopfrechnen</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kopfrechnen">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{--bg:#f4f1ec;--card:#fffdf9;--ink:#23201c;--mute:#8a8379;--acc:#4f46e5;--accs:#e8e6fb;--ok:#2e9d6b;--bad:#d9534f;--line:#e6e1d8;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17161a;--card:#222126;--ink:#f1eee9;--mute:#948f88;--acc:#8b86ff;--accs:#2c2a46;--line:#33313a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17161a;--card:#222126;--ink:#f1eee9;--mute:#948f88;--acc:#8b86ff;--accs:#2c2a46;--line:#33313a;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Rounded","Segoe UI",Roboto,sans-serif}
+.app{max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;padding:16px 20px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:15px;font-weight:600;color:var(--ink)}
+.chip.mute{color:var(--mute);font-weight:500}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.icon{width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--line);font-size:20px}
+.bar{height:6px;border-radius:3px;background:var(--line);margin:18px 0 0;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--acc);border-radius:3px;transition:width .25s linear}
+.stage{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:22px}
+.q{font-size:clamp(48px,16vw,76px);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-align:center;transition:transform .15s}
+.q.pop{transform:scale(1.04)}
+.q.shake{animation:sh .3s}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.ans{width:70%;max-width:260px;font-weight:700;font-size:40px;line-height:1.2;font-family:inherit;text-align:center;background:var(--card);color:var(--ink);border:2px solid var(--line);border-radius:20px;padding:14px;outline:none;font-variant-numeric:tabular-nums}
+.ans:focus{border-color:var(--acc)}
+.hint{color:var(--mute);font-size:14px;min-height:20px}
+.row{display:flex;gap:10px;justify-content:center}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 18px;font-weight:600;font-size:15px}
+.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:5}
+.sheet.on{display:flex}
+.panel{background:var(--bg);width:100%;max-width:480px;max-height:90%;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px))}
+.panel h2{margin:0 0 14px;font-size:20px}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.sec h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;padding:9px 4px;border-radius:10px;font-weight:600;font-size:14px;color:var(--mute)}
+.seg button.on{background:var(--acc);color:#fff}
+.ops{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ops button{padding:12px 0;border-radius:12px;font-size:22px;font-weight:700;background:var(--bg);color:var(--mute)}
+.ops button.on{background:var(--accs);color:var(--acc);outline:2px solid var(--acc)}
+.rg{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:15px}
+.rg b{width:68px;font-weight:600}
+.rg input{width:0;flex:1;font:inherit;font-size:16px;text-align:center;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px}
+.rg span{color:var(--mute)}
+.res{text-align:center}
+.big{font-size:72px;font-weight:800;color:var(--acc);line-height:1}
+.stats{display:flex;gap:10px;justify-content:center;margin:16px 0 22px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <span class="chip" id="score">0 richtig</span>
+    <span class="chip mute" id="timer"></span>
+    <span style="display:flex;gap:8px"><button class="icon" id="stbtn" aria-label="Statistik">📊</button><button class="icon" id="gear" aria-label="Einstellungen">⚙︎</button></span>
+  </div>
+  <div class="bar" id="barwrap"><i id="bar"></i></div>
+
+  <div class="stage" id="stage">
+    <div class="q" id="q"></div>
+    <input class="ans" id="ans" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" aria-label="Antwort">
+    <div class="hint" id="hint"></div>
+    <div class="row"><button class="btn" id="skip">Überspringen</button></div>
+  </div>
+
+  <div class="stage res" id="result" style="display:none">
+    <div class="hint">Zeit abgelaufen</div>
+    <div class="big" id="rbig">0</div>
+    <div class="hint">richtig gelöst</div>
+    <div class="stats" id="rstats"></div>
+    <button class="btn p" id="again">Nochmal</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="panel">
+    <h2>Einstellungen</h2>
+    <div class="sec"><h3>Modus</h3>
+      <div class="seg" id="mode"><button data-v="free">Ohne Zeit</button><button data-v="timed">Auf Zeit</button></div>
+      <div class="seg" id="durwrap" style="margin-top:10px"><button data-v="30">30 s</button><button data-v="60">60 s</button><button data-v="120">2 min</button><button data-v="300">5 min</button></div>
+    </div>
+    <div class="sec"><h3>Rechenarten</h3>
+      <div class="ops" id="ops"><button data-v="add">+</button><button data-v="sub">−</button><button data-v="mul">×</button><button data-v="div">÷</button></div>
+    </div>
+    <div class="sec" id="s-add"><h3>Addition &amp; Subtraktion</h3>
+      <div class="rg"><b>Zahl 1</b><input type="number" inputmode="numeric" data-k="a1"><span>bis</span><input type="number" inputmode="numeric" data-k="a2"></div>
+      <div class="rg"><b>Zahl 2</b><input type="number" inputmode="numeric" data-k="b1"><span>bis</span><input type="number" inputmode="numeric" data-k="b2"></div>
+    </div>
+    <div class="sec" id="s-mul"><h3>Multiplikation &amp; Division</h3>
+      <div class="rg"><b>Faktor 1</b><input type="number" inputmode="numeric" data-k="c1"><span>bis</span><input type="number" inputmode="numeric" data-k="c2"></div>
+      <div class="rg"><b>Faktor 2</b><input type="number" inputmode="numeric" data-k="d1"><span>bis</span><input type="number" inputmode="numeric" data-k="d2"></div>
+    </div>
+    <div class="row"><button class="btn p" id="done">Fertig</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="ssheet"><div class="panel"><h2>Statistik</h2><div class="sec res"><div class="big" id="st-n">0</div><div class="hint">Aufgaben insgesamt gelöst</div><div class="stats"><span class="chip" id="st-avg"></span></div></div><div class="sec"><h3>Nach Rechenart</h3><div id="st-ops"></div></div><div class="row"><button class="btn" id="st-reset">Zurücksetzen</button><button class="btn p" id="st-done">Fertig</button></div></div></div>
+
+<script>
+(function(){
+var DEF={mode:"free",dur:60,ops:["add","sub","mul","div"],a1:2,a2:100,b1:2,b2:100,c1:2,c2:12,d1:2,d2:100};
+var S=Object.assign({},DEF);
+try{var raw=localStorage.getItem("kr-settings");if(raw)S=Object.assign({},DEF,JSON.parse(raw))}catch(e){}
+function save(){try{localStorage.setItem("kr-settings",JSON.stringify(S))}catch(e){}}
+var $=function(id){return document.getElementById(id)};
+var cur=null,correct=0,asked=0,running=false,left=0,tick=null,qStart=0,times=[];
+function rnd(a,b){a=Math.round(+a);b=Math.round(+b);if(a>b){var t=a;a=b;b=t}return a+Math.floor(Math.random()*(b-a+1))}
+function make(){
+  var ops=S.ops.length?S.ops:["add"],op=ops[Math.floor(Math.random()*ops.length)],a,b,t,r;
+  if(op==="add"){a=rnd(S.a1,S.a2);b=rnd(S.b1,S.b2);t=a+" + "+b;r=a+b}
+  else if(op==="sub"){a=rnd(S.a1,S.a2);b=rnd(S.b1,S.b2);t=(a+b)+" − "+a;r=b}
+  else if(op==="mul"){a=rnd(S.c1,S.c2);b=rnd(S.d1,S.d2);t=a+" × "+b;r=a*b}
+  else{a=rnd(S.c1,S.c2);b=rnd(S.d1,S.d2);if(a===0)a=1;t=(a*b)+" ÷ "+a;r=b}
+  return {t:t,r:r,op:op};
+}
+function next(){
+  cur=make();$("q").textContent=cur.t;$("ans").value="";qStart=Date.now();
+  $("hint").textContent="";
+}
+function upd(){
+  $("score").textContent=correct+" richtig";
+  var timed=S.mode==="timed";
+  $("barwrap").style.visibility=timed?"visible":"hidden";
+  $("timer").textContent=timed?fmt(running?left:S.dur):(asked?Math.round(100*correct/asked)+" % Treffer":"");
+  if(timed)$("bar").style.width=(100*(running?left:S.dur)/S.dur)+"%";
+}
+function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
+function reset(){
+  clearInterval(tick);running=false;correct=0;asked=0;times=[];left=S.dur;
+  $("result").style.display="none";$("stage").style.display="flex";
+  next();upd();$("ans").focus();
+}
+function startTimer(){
+  if(S.mode!=="timed"||running)return;
+  running=true;var end=Date.now()+S.dur*1000;left=S.dur;
+  tick=setInterval(function(){
+    left=(end-Date.now())/1000;
+    if(left<=0){finish()}else upd();
+  },200);
+}
+function finish(){
+  clearInterval(tick);running=false;left=0;upd();
+  $("stage").style.display="none";$("result").style.display="flex";
+  $("rbig").textContent=correct;
+  var avg=times.length?(times.reduce(function(a,b){return a+b},0)/times.length/1000).toFixed(1).replace(".",","):"–";
+  $("rstats").innerHTML='<span class="chip">Ø '+avg+' s pro Aufgabe</span><span class="chip">'+asked+' beantwortet</span>';
+}
+$("ans").addEventListener("input",function(){
+  var v=this.value.replace(/[^0-9\-]/g,"");this.value=v;
+  if(v==="")return;
+  startTimer();
+  if(+v===cur.r){
+    correct++;asked++;times.push(Date.now()-qStart);rec(cur.op,Date.now()-qStart);
+    var q=$("q");q.classList.add("pop");setTimeout(function(){q.classList.remove("pop")},150);
+    next();upd();
+  }else if(v.length>=String(cur.r).length&&v.replace("-","").length>=String(Math.abs(cur.r)).length){
+    var q2=$("q");q2.classList.remove("shake");void q2.offsetWidth;q2.classList.add("shake");
+    $("hint").textContent="Nicht ganz – versuch’s nochmal";
+    this.value="";
+  }
+});
+$("skip").onclick=function(){asked++;$("hint").textContent=cur.t+" = "+cur.r;var h=cur.t+" = "+cur.r;next();$("hint").textContent=h;upd();$("ans").focus()};
+var ST={n:0,ms:0,ops:{add:{n:0,ms:0},sub:{n:0,ms:0},mul:{n:0,ms:0},div:{n:0,ms:0}}};
+try{var rs=localStorage.getItem("kr-stats");if(rs){var pp=JSON.parse(rs);if(pp&&pp.ops)ST=pp}}catch(e){}
+function saveST(){try{localStorage.setItem("kr-stats",JSON.stringify(ST))}catch(e){}}
+function rec(op,ms){ST.n++;ST.ms+=ms;var o=ST.ops[op]||(ST.ops[op]={n:0,ms:0});o.n++;o.ms+=ms;saveST()}
+function avg(ms,n){return n?(ms/n/1000).toFixed(1).replace(".",",")+" s":"–"}
+function showST(){
+  $("st-n").textContent=ST.n;
+  $("st-avg").textContent="Ø "+avg(ST.ms,ST.n)+" pro Aufgabe";
+  var sy={add:"+",sub:"−",mul:"×",div:"÷"},h="";
+  ["add","sub","mul","div"].forEach(function(k){var o=ST.ops[k]||{n:0,ms:0};
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0"><b style="font-size:22px;width:30px">'+sy[k]+'</b><span>'+o.n+' gelöst</span><span style="color:var(--mute)">Ø '+avg(o.ms,o.n)+'</span></div>'});
+  $("st-ops").innerHTML=h;$("st-reset").textContent="Zurücksetzen";armed=false;
+}
+var armed=false;
+$("stbtn").onclick=function(){clearInterval(tick);running=false;showST();$("ssheet").classList.add("on")};
+function closeST(){$("ssheet").classList.remove("on");reset()}
+$("st-done").onclick=closeST;
+$("ssheet").addEventListener("click",function(e){if(e.target.id==="ssheet")closeST()});
+$("st-reset").onclick=function(){
+  if(!armed){armed=true;this.textContent="Wirklich löschen?";return}
+  ST={n:0,ms:0,ops:{add:{n:0,ms:0},sub:{n:0,ms:0},mul:{n:0,ms:0},div:{n:0,ms:0}}};saveST();showST();
+};
+$("again").onclick=reset;
+$("stage").addEventListener("click",function(e){if(e.target.id!=="skip")$("ans").focus()});
+function sync(){
+  document.querySelectorAll("#mode button").forEach(function(b){b.classList.toggle("on",b.dataset.v===S.mode)});
+  document.querySelectorAll("#durwrap button").forEach(function(b){b.classList.toggle("on",+b.dataset.v===S.dur)});
+  $("durwrap").style.display=S.mode==="timed"?"flex":"none";
+  document.querySelectorAll("#ops button").forEach(function(b){b.classList.toggle("on",S.ops.indexOf(b.dataset.v)>-1)});
+  $("s-add").style.display=(S.ops.indexOf("add")>-1||S.ops.indexOf("sub")>-1)?"block":"none";
+  $("s-mul").style.display=(S.ops.indexOf("mul")>-1||S.ops.indexOf("div")>-1)?"block":"none";
+  document.querySelectorAll(".rg input").forEach(function(i){i.value=S[i.dataset.k]});
+}
+document.querySelectorAll("#mode button").forEach(function(b){b.onclick=function(){S.mode=b.dataset.v;sync()}});
+document.querySelectorAll("#durwrap button").forEach(function(b){b.onclick=function(){S.dur=+b.dataset.v;sync()}});
+document.querySelectorAll("#ops button").forEach(function(b){b.onclick=function(){
+  var i=S.ops.indexOf(b.dataset.v);
+  if(i>-1){if(S.ops.length>1)S.ops.splice(i,1)}else S.ops.push(b.dataset.v);
+  sync()}});
+document.querySelectorAll(".rg input").forEach(function(i){i.oninput=function(){if(i.value!==""&&!isNaN(+i.value))S[i.dataset.k]=+i.value}});
+function openS(){clearInterval(tick);running=false;sync();$("sheet").classList.add("on")}
+function closeS(){save();$("sheet").classList.remove("on");reset()}
+$("gear").onclick=openS;$("done").onclick=closeS;
+$("sheet").addEventListener("click",function(e){if(e.target.id==="sheet")closeS()});
+reset();
+})();
+</script>
+</body>
+</html>
