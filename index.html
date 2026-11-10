@@ -29,6 +29,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.7em;line-height:1.1;margin:0 .12em}
 .fr i{font-style:normal;padding:0 .15em}
 .fr i:first-child{border-bottom:3px solid currentColor}
+.ex p{margin:10px 0;font-size:17px;line-height:1.5}.ex b{color:var(--acc)}
 .q.shake{animation:sh .3s}
 @keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .ans{width:70%;max-width:260px;font-weight:700;font-size:40px;line-height:1.2;font-family:inherit;text-align:center;background:var(--card);color:var(--ink);border:2px solid var(--line);border-radius:20px;padding:14px;outline:none;font-variant-numeric:tabular-nums}
@@ -74,6 +75,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
     <div class="row"><button class="btn" id="slash" style="display:none;font-size:20px;padding:10px 22px">/</button><button class="btn" id="skip">Überspringen</button></div>
   </div>
 
+  <button class="btn" id="help" style="margin:8px auto 4px;display:block">💡 Erklärung</button>
   <div class="stage res" id="result" style="display:none">
     <div class="hint">Zeit abgelaufen</div>
     <div class="big" id="rbig">0</div>
@@ -101,17 +103,19 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
       <div class="rg"><b>Faktor 1</b><input type="number" inputmode="numeric" data-k="c1"><span>bis</span><input type="number" inputmode="numeric" data-k="c2"></div>
       <div class="rg"><b>Faktor 2</b><input type="number" inputmode="numeric" data-k="d1"><span>bis</span><input type="number" inputmode="numeric" data-k="d2"></div>
     </div>
-    <div class="sec" id="s-pct"><h3>Prozent</h3><div class="rg"><b>Grundwert</b><input type="number" inputmode="numeric" data-k="p1"><span>bis</span><input type="number" inputmode="numeric" data-k="p2"></div></div>
+    <div class="sec" id="s-pct"><h3>Prozent</h3><div class="rg"><b>Prozentsatz</b><input type="number" inputmode="numeric" data-k="q1"><span>bis</span><input type="number" inputmode="numeric" data-k="q2"></div><div class="hint" style="text-align:left;margin-top:10px">Schrittweite (z. B. 1er: 13 %, 14 % …)</div><div class="seg" id="qs"><button data-v="1">1 %</button><button data-v="5">5 %</button><button data-v="10">10 %</button></div><div class="rg"><b>Grundwert</b><input type="number" inputmode="numeric" data-k="p1"><span>bis</span><input type="number" inputmode="numeric" data-k="p2"></div></div>
     <div class="sec" id="s-frac"><h3>Brüche</h3><div class="rg"><b>Nenner bis</b><input type="number" inputmode="numeric" data-k="f2"></div></div>
     <div class="row"><button class="btn p" id="done">Fertig</button></div>
   </div>
 </div>
 
+<div class="sheet" id="esheet"><div class="panel ex"><h2>So geht’s schnell</h2><div id="ex-q" style="font-size:18px;font-weight:600"></div><div id="ex-body"></div><div class="row" style="margin-top:14px"><button class="btn p" id="ex-done">Verstanden</button></div></div></div>
+
 <div class="sheet" id="ssheet"><div class="panel"><h2>Statistik</h2><div class="sec res"><div class="big" id="st-n">0</div><div class="hint">Aufgaben insgesamt gelöst</div><div class="stats"><span class="chip" id="st-avg"></span></div></div><div class="sec"><h3>Nach Rechenart</h3><div id="st-ops"></div></div><div class="row"><button class="btn" id="st-reset">Zurücksetzen</button><button class="btn p" id="st-done">Fertig</button></div></div></div>
 
 <script>
 (function(){
-var DEF={mode:"free",dur:60,ops:["add","sub","mul","div"],a1:2,a2:100,b1:2,b2:100,c1:2,c2:12,d1:2,d2:100,p1:10,p2:400,f2:10};
+var DEF={mode:"free",dur:60,ops:["add","sub","mul","div"],a1:2,a2:100,b1:2,b2:100,c1:2,c2:12,d1:2,d2:100,p1:10,p2:400,f2:10,q1:5,q2:90,qs:5};
 var S=Object.assign({},DEF);
 try{var raw=localStorage.getItem("kr-settings");if(raw)S=Object.assign({},DEF,JSON.parse(raw))}catch(e){}
 function save(){try{localStorage.setItem("kr-settings",JSON.stringify(S))}catch(e){}}
@@ -123,9 +127,9 @@ function fr(n,d){return '<span class="fr"><i>'+n+'</i><i>'+d+'</i></span>'}
 function make(){
   var ops=S.ops.length?S.ops:["add"],op=ops[Math.floor(Math.random()*ops.length)],o;
   if(op==="pct"){
-    var ps=[1,2,5,10,15,20,25,30,40,50,60,75,80,90],p=ps[Math.floor(Math.random()*ps.length)],step=100/gcd(p,100),
+    var qs=Math.max(1,Math.round(S.qs)),q1=Math.max(1,Math.round(S.q1)),q2=Math.max(q1,Math.round(S.q2)),p=q1+qs*rnd(0,Math.floor((q2-q1)/qs)),step=100/gcd(p,100),
     lo=Math.max(1,Math.ceil(S.p1/step)),hi=Math.max(lo,Math.floor(S.p2/step)),g=rnd(lo,hi)*step,r=g*p/100;
-    return {t:p+" % von "+g,p:p+" % von "+g,r:r,a:String(r),op:"pct"};
+    return {t:p+" % von "+g,p:p+" % von "+g,r:r,a:String(r),op:"pct",x:g,y:p};
   }
   if(op==="frac"){
     var md=Math.max(2,Math.round(S.f2)),tries=0;
@@ -138,7 +142,7 @@ function make(){
       if(n<=0)continue;
       var g2=gcd(n,d);n/=g2;d/=g2;
       if(d===1||d>200||n>200)continue;
-      return {t:fr(a1,b1)+" "+k+" "+fr(a2,b2),p:a1+"/"+b1+" "+k+" "+a2+"/"+b2,r:n/d,a:n+"/"+d,n:n,d:d,op:"frac"};
+      return {t:fr(a1,b1)+" "+k+" "+fr(a2,b2),p:a1+"/"+b1+" "+k+" "+a2+"/"+b2,r:n/d,a:n+"/"+d,n:n,d:d,op:"frac",a1:a1,b1:b1,a2:a2,b2:b2,k:k};
     }
     return {t:fr(1,2)+" + "+fr(1,4),p:"1/2 + 1/4",r:0.75,a:"3/4",n:3,d:4,op:"frac"};
   }
@@ -150,7 +154,7 @@ function make0(){
   else if(op==="sub"){a=rnd(S.a1,S.a2);b=rnd(S.b1,S.b2);t=(a+b)+" − "+a;r=b}
   else if(op==="mul"){a=rnd(S.c1,S.c2);b=rnd(S.d1,S.d2);t=a+" × "+b;r=a*b}
   else{a=rnd(S.c1,S.c2);b=rnd(S.d1,S.d2);if(a===0)a=1;t=(a*b)+" ÷ "+a;r=b}
-  return {t:t,r:r,op:op};
+  return {t:t,r:r,op:op,x:op==="sub"?a+b:op==="div"?a*b:a,y:(op==="sub"||op==="div")?a:b};
 }
 function next(){
   cur=make();$("q").innerHTML=cur.t;$("ans").value="";$("ans").placeholder=cur.op==="frac"?"3/4":"";$("slash").style.display=cur.op==="frac"?"inline-block":"none";qStart=Date.now();
@@ -166,7 +170,7 @@ function upd(){
 function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
 function reset(){
   clearInterval(tick);running=false;correct=0;asked=0;times=[];left=S.dur;
-  $("result").style.display="none";$("stage").style.display="flex";
+  $("result").style.display="none";$("stage").style.display="flex";$("help").style.display="block";
   next();upd();$("ans").focus();
 }
 function startTimer(){
@@ -179,7 +183,7 @@ function startTimer(){
 }
 function finish(){
   clearInterval(tick);running=false;left=0;upd();
-  $("stage").style.display="none";$("result").style.display="flex";
+  $("stage").style.display="none";$("help").style.display="none";$("result").style.display="flex";
   $("rbig").textContent=correct;
   var avg=times.length?(times.reduce(function(a,b){return a+b},0)/times.length/1000).toFixed(1).replace(".",","):"–";
   $("rstats").innerHTML='<span class="chip">Ø '+avg+' s pro Aufgabe</span><span class="chip">'+asked+' beantwortet</span>';
@@ -237,6 +241,81 @@ $("st-reset").onclick=function(){
   if(!armed){armed=true;this.textContent="Wirklich löschen?";return}
   ST={n:0,ms:0,ops:{add:{n:0,ms:0},sub:{n:0,ms:0},mul:{n:0,ms:0},div:{n:0,ms:0}}};saveST();showST();
 };
+function f(x){return Number.isInteger(x)?String(x):String(Math.round(x*100)/100).replace('.',',')}
+function lcm(a,b){return a/gcd(a,b)*b}
+function explain(c){
+  var o=[],r=c.r,x=c.x,y=c.y,e,t,m;
+  if(c.op==='add'||c.op==='sub'){
+    var up=c.op==='add',s=up?'+':'−';
+    if(y<10){
+      var d=up?10-x%10:x%10;
+      if(x%10!==0&&y>d){m=up?x+d:x-d;
+        o.push('Geh erst zum vollen Zehner: '+x+' '+s+' '+d+' = '+m+'.');
+        o.push('Dann den Rest: '+m+' '+s+' '+(y-d)+' = '+r+'.');
+      }else o.push('Hier reicht direkt: '+x+' '+s+' '+y+' = '+r+'.');
+    }else{
+      e=y%10;t=y-e;
+      if(e===0)o.push('Rechne in Zehnern: '+x+' '+s+' '+y+' = '+r+'.');
+      else if(e>=7){m=up?x+t+10:x-t-10;
+        o.push('Runde '+y+' auf '+(t+10)+' auf: '+x+' '+s+' '+(t+10)+' = '+m+'.');
+        o.push('Gleiche aus: du hast '+(10-e)+' zu '+(up?'viel dazugezählt':'viel abgezogen')+', also '+m+' '+(up?'−':'+')+' '+(10-e)+' = '+r+'.');
+      }else{m=up?x+t:x-t;
+        o.push('Zerlege '+y+' in '+t+' und '+e+'. Erst die Zehner: '+x+' '+s+' '+t+' = '+m+'.');
+        o.push('Dann die Einer: '+m+' '+s+' '+e+' = '+r+'.');
+      }
+    }
+  }else if(c.op==='mul'){
+    var u,big=Math.max(x,y),sm=Math.min(x,y);
+    if(x===5||y===5){u=x===5?y:x;o.push('Mal 5 = mal 10 und halbieren: '+u+' × 10 = '+u*10+', die Hälfte davon ist '+r+'.')}
+    else if(x===25||y===25){u=x===25?y:x;o.push('Mal 25 = mal 100 und durch 4: '+u+' × 100 = '+u*100+', geteilt durch 4 ist '+r+'.')}
+    else if(x===11||y===11){u=x===11?y:x;o.push('Mal 11 = mal 10 plus die Zahl selbst: '+u*10+' + '+u+' = '+r+'.')}
+    else if(big<10)o.push('Kleines Einmaleins: '+x+' × '+y+' = '+r+'.');
+    else{e=big%10;t=big-e;
+      if(e===0)o.push('Lass die Null weg: '+big/10+' × '+sm+' = '+big/10*sm+'. Dann eine Null anhängen: '+r+'.');
+      else if(e>=8){o.push(big+' ist knapp unter '+(t+10)+'. Rechne '+(t+10)+' × '+sm+' = '+(t+10)*sm+'.');o.push('Zieh das Zuviel ab: '+(10-e)+' × '+sm+' = '+(10-e)*sm+', also '+(t+10)*sm+' − '+(10-e)*sm+' = '+r+'.')}
+      else{o.push('Zerlege '+big+' in '+t+' + '+e+'.');o.push(t+' × '+sm+' = '+t*sm+' und '+e+' × '+sm+' = '+e*sm+'.');o.push('Zusammen: '+t*sm+' + '+e*sm+' = '+r+'.')}
+    }
+  }else if(c.op==='div'){
+    o.push('Denk rückwärts: '+y+' × ? = '+x+'.');
+    if(r>=10&&r%10===0)o.push(y+' × '+r+' = '+x+' (wie '+y+' × '+r/10+', nur mit einer Null mehr).');
+    else if(r>=10){var tt=Math.floor(r/10)*10;o.push('Zerlege '+x+' in '+tt*y+' + '+(x-tt*y)+'. Dann '+tt*y+' ÷ '+y+' = '+tt+' und '+(x-tt*y)+' ÷ '+y+' = '+(r-tt)+'.');o.push('Zusammen: '+tt+' + '+(r-tt)+' = '+r+'.')}
+    else o.push('Aus dem Einmaleins: '+y+' × '+r+' = '+x+'.');
+  }else if(c.op==='pct'){
+    var g=x,p=y,ten=g/10,one=g/100;
+    if(p===50)o.push('50 % ist die Hälfte: '+f(g)+' ÷ 2 = '+f(r)+'.');
+    else if(p===25){o.push('25 % ist ein Viertel, also zweimal halbieren.');o.push(f(g)+' ÷ 2 = '+f(g/2)+', noch einmal ÷ 2 = '+f(r)+'.')}
+    else if(p===75){o.push('75 % = 50 % + 25 %.');o.push(f(g/2)+' + '+f(g/4)+' = '+f(r)+'.')}
+    else if(p===10)o.push('10 % heißt durch 10 teilen: '+f(g)+' ÷ 10 = '+f(r)+'.');
+    else if(p===1)o.push('1 % heißt durch 100 teilen: '+f(g)+' ÷ 100 = '+f(r)+'.');
+    else{
+      var a=Math.floor(p/10),rm=p%10,b=rm>=5?1:0,c1=rm-5*b,sum=[];
+      if(a>0){o.push('10 % von '+f(g)+' sind '+f(ten)+'.');sum.push(f(a*ten));if(a>1)o.push(a+' × '+f(ten)+' = '+f(a*ten)+' (das sind '+a*10+' %).')}
+      if(b){o.push('5 % ist die Hälfte von 10 %: '+f(ten/2)+'.');sum.push(f(ten/2))}
+      if(c1){o.push('1 % von '+f(g)+' ist '+f(one)+'.');sum.push(f(c1*one));if(c1>1)o.push(c1+' × '+f(one)+' = '+f(c1*one)+'.')}
+      o.push('Zusammen ('+p+' %): '+sum.join(' + ')+' = '+f(r)+'.');
+    }
+  }else{
+    var A=c.a1,B=c.b1,C=c.a2,D=c.b2,k=c.k,sn,sd,gg;
+    if(k==='+'||k==='−'){var l=lcm(B,D),n1=A*(l/B),n2=C*(l/D);sn=k==='+'?n1+n2:n1-n2;sd=l;
+      o.push('Hauptnenner: das kleinste gemeinsame Vielfache von '+B+' und '+D+' ist '+l+'.');
+      o.push('Erweitern: '+A+'/'+B+' = '+n1+'/'+l+' und '+C+'/'+D+' = '+n2+'/'+l+'.');
+      o.push('Zähler rechnen: '+n1+' '+k+' '+n2+' = '+sn+', also '+sn+'/'+sd+'.');
+    }else if(k==='×'){sn=A*C;sd=B*D;o.push('Zähler mal Zähler, Nenner mal Nenner: '+A+'×'+C+' = '+sn+' und '+B+'×'+D+' = '+sd+'.');o.push('Tipp: Wenn du vorher über Kreuz kürzt, werden die Zahlen kleiner.')}
+    else{sn=A*D;sd=B*C;o.push('Durch einen Bruch teilen heißt: mit dem Kehrwert malnehmen: '+A+'/'+B+' × '+D+'/'+C+'.');o.push('Zähler: '+A+'×'+D+' = '+sn+', Nenner: '+B+'×'+C+' = '+sd+', also '+sn+'/'+sd+'.')}
+    gg=gcd(sn,sd);
+    o.push(gg>1?'Kürzen durch '+gg+': '+sn+'/'+sd+' = '+c.a+'.':'Das ist schon gekürzt.');
+  }
+  return o.map(function(l){return '<p>'+l+'</p>'}).join('')+'<p><b>Ergebnis: '+c.a+'</b></p>';
+}
+var pl=null;
+function runTimer(sec){running=true;var end=Date.now()+sec*1000;left=sec;clearInterval(tick);tick=setInterval(function(){left=(end-Date.now())/1000;if(left<=0){finish()}else upd()},200)}
+$("help").onclick=function(){
+  pl=running?left:null;clearInterval(tick);running=false;
+  $("ex-q").textContent=cur.p+" = ?";$("ex-body").innerHTML=explain(cur);$("esheet").classList.add("on");
+};
+function closeEx(){$("esheet").classList.remove("on");if(pl!==null){runTimer(pl);pl=null}$("ans").focus()}
+$("ex-done").onclick=closeEx;
+$("esheet").addEventListener("click",function(e){if(e.target.id==="esheet")closeEx()});
 $("again").onclick=reset;
 $("stage").addEventListener("click",function(e){if(e.target.id!=="skip")$("ans").focus()});
 function sync(){
@@ -247,6 +326,7 @@ function sync(){
   $("s-add").style.display=(S.ops.indexOf("add")>-1||S.ops.indexOf("sub")>-1)?"block":"none";
   $("s-mul").style.display=(S.ops.indexOf("mul")>-1||S.ops.indexOf("div")>-1)?"block":"none";
   $("s-pct").style.display=S.ops.indexOf("pct")>-1?"block":"none";
+  document.querySelectorAll("#qs button").forEach(function(b){b.classList.toggle("on",+b.dataset.v===S.qs)});
   $("s-frac").style.display=S.ops.indexOf("frac")>-1?"block":"none";
   document.querySelectorAll(".rg input").forEach(function(i){i.value=S[i.dataset.k]});
 }
@@ -257,6 +337,7 @@ document.querySelectorAll("#ops button").forEach(function(b){b.onclick=function(
   if(i>-1){if(S.ops.length>1)S.ops.splice(i,1)}else S.ops.push(b.dataset.v);
   sync()}});
 document.querySelectorAll(".rg input").forEach(function(i){i.oninput=function(){if(i.value!==""&&!isNaN(+i.value))S[i.dataset.k]=+i.value}});
+document.querySelectorAll("#qs button").forEach(function(b){b.onclick=function(){S.qs=+b.dataset.v;sync()}});
 function openS(){clearInterval(tick);running=false;sync();$("sheet").classList.add("on")}
 function closeS(){save();$("sheet").classList.remove("on");reset()}
 $("gear").onclick=openS;$("done").onclick=closeS;
